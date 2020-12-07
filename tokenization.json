@@ -1,0 +1,38 @@
+{
+  "process": {
+    "name": "Project - Emotional City processing",
+    "logs": "/opt/crowd-pulse/logs"
+  },
+  "nodes": {
+    "fetch": {
+      "plugin": "message-fetch",
+      "config": {
+        "db": "emotionalcity"
+      }
+    },
+    "tokenizer": {
+      "plugin": "tokenizer-opennlp",
+      "config": {
+        "minChars": "4",
+        "mentions": "true",
+        "urls": "true",
+        "hashtags": "false",
+        "calculate": "new"
+      }
+    },
+    "persistance": {
+      "plugin": "message-persist",
+      "config": {
+        "db": "emotionalcity"
+      }
+    }
+  },
+  "edges": {
+    "fetch": [
+      "tokenizer"
+    ],
+    "tokenizer": [
+      "persistance"
+    ]
+  }
+}

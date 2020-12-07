@@ -1,0 +1,34 @@
+{
+  "process": {
+    "name": "Project - Emotional City processing",
+    "logs": "/opt/crowd-pulse/logs"
+  },
+  "nodes": {
+    "fetch": {
+      "plugin": "message-fetch",
+      "config": {
+        "db": "emotionalcity"
+      }
+    },
+    "sentiment": {
+      "plugin": "sentiment-sentit",
+      "config": {
+        "calculate": "new"
+      }
+    },
+    "persistance": {
+      "plugin": "message-persist",
+      "config": {
+        "db": "emotionalcity"
+      }
+    }
+  },
+  "edges": {
+    "fetch": [
+      "sentiment"
+    ],
+    "sentiment": [
+      "persistance"
+    ]
+  }
+}
