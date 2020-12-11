@@ -36,7 +36,7 @@ def get_access_token(CLIEND_ID,AUTHORITY_URL,SCOPES):
           json.dump({'refresh_token':token['refresh_token']},f)
        with open('access_token','w+') as f:
           json.dump({'expires_in':int(token['expires_in'])+t,'access_token':token['access_token']},f)
-       token = ['access_token']
+       token = token['access_token']
     else:
        print('Using cached access_token')
        token = access_token['access_token']
