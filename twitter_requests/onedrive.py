@@ -40,10 +40,11 @@ def get_access_token(CLIEND_ID,AUTHORITY_URL,SCOPES):
     else:
        print('Using cached access_token')
        token = access_token['access_token']
+       token = get_access_token(CLIENT_ID,AUTHORITY_URL,SCOPES)
+       headers = {'Authorization': 'Bearer {}'.format(token)}
     return token
 
-token = get_access_token(CLIENT_ID,AUTHORITY_URL,SCOPES)
-headers = {'Authorization': 'Bearer {}'.format(token)}
+
 onedrive_destination = '{}/{}/me/drive/root:/emc-backups'.format(RESOURCE_URL,API_VERSION) #DEFAULT FOLDER WHERE STORE BACKUPS
 local_folder = r"/datadrive/disk1/pcassotti/dump/emotionalcity"
 
