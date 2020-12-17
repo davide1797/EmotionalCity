@@ -131,6 +131,3 @@ def upload(folder_in,folder_out,headers):
                        i = i + 1
                     
             file_data.close()
-
-#upload(local_folder,'%s/2020/12/9'%onedrive_destination,headers)
-print(download('%s/2020/12/9'%onedrive_destination,headers))
