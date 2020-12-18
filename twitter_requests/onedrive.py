@@ -41,7 +41,7 @@ def get_headers(CLIEND_ID,AUTHORITY_URL,SCOPES):
        print('Using cached access_token')
        token = access_token['access_token']
        headers = {'Authorization': 'Bearer {}'.format(token)}
-    return token
+    return headers
 
 
 onedrive_destination = '{}/{}/me/drive/root:/emc-backups'.format(RESOURCE_URL,API_VERSION) #DEFAULT FOLDER WHERE STORE BACKUPS
