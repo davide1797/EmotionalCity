@@ -18,7 +18,7 @@ SCOPES = ['Sites.ReadWrite.All','Files.ReadWrite.All']
 #Check if the actual access token is expired
 #If access token is expired get new access token with refresh token, then save new access token and refresh token
 #Else use actual access token
-def headers(CLIEND_ID,AUTHORITY_URL,SCOPES):
+def get_headers(CLIEND_ID,AUTHORITY_URL,SCOPES):
     d = datetime.utcnow()
     t = calendar.timegm(d.utctimetuple())
     with open('access_token','r') as f:
@@ -40,7 +40,6 @@ def headers(CLIEND_ID,AUTHORITY_URL,SCOPES):
     else:
        print('Using cached access_token')
        token = access_token['access_token']
-       token = get_access_token(CLIENT_ID,AUTHORITY_URL,SCOPES)
        headers = {'Authorization': 'Bearer {}'.format(token)}
     return token
 
