@@ -12,23 +12,33 @@ import logging
     
 class TestTwitterRequests(unittest.TestCase):
     def test_count_tweets(self):
-        self.assertTrue((np.array([42., 18., 6.]) == twitter_requests.count_tweets(db, 1607464906, 1607475302, 3600, True, logger)[0]).all()) 
+        restweet = twitter_requests.count_tweets(db, 1607464906, 1607475302, 3600, True, logger)
+        res = np.zeros(3)
+        res[0] = restweet[0][2]
+        res[1] = restweet[1][2]
+        res[2] = restweet[2][2]
+        self.assertTrue((np.array([42., 18., 6.]) == res).all()) 
         self.assertRaises(Exception, twitter_requests.count_tweets, db, 1607464906, 0, 3600, True, logger)
     
     def test_count_tweets_time(self):
-        self.assertTrue((np.array([42., 18., 6.]) == twitter_requests.count_tweets_time(db, twitter_requests.int2time(1607464906), twitter_requests.int2time(1607475302), 3600, True, logger)[0]).all()) 
+        restweet = twitter_requests.count_tweets_time(db, twitter_requests.int2time(1607464906), twitter_requests.int2time(1607475302), 3600, True, logger)
+        res = np.zeros(3)
+        res[0] = restweet[0][2]
+        res[1] = restweet[1][2]
+        res[2] = restweet[2][2]
+        self.assertTrue((np.array([42., 18., 6.]) == res).all()) 
         
     def test_senti_tweets(self):
         res = (0.199 + 0.066 + 0.152)/3
         restweet = twitter_requests.senti_tweets(db, 1607464906, 1607475302, 3600, False, logger)
-        mean = (restweet[3] + restweet[7] + restweet[11])/3
+        mean = (restweet[0][2] + restweet[1][2] + restweet[2][2])/3
         self.assertAlmostEqual(mean, res, 2)
         self.assertRaises(Exception, twitter_requests.senti_tweets, db, 1607464906, 0, 3600, False, logger)
     
     def test_senti_tweets_time(self):
         res = (0.199 + 0.066 + 0.152)/3
         restweet = twitter_requests.senti_tweets_time(db, twitter_requests.int2time(1607464906), twitter_requests.int2time(1607475302), 3600, False, logger)
-        mean = (restweet[3] + restweet[7] + restweet[11])/3
+        mean = (restweet[0][2] + restweet[1][2] + restweet[2][2])/3
         self.assertAlmostEqual(mean, res, 2)
         
     def test_search_tweets(self):

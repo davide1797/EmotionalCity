@@ -13,33 +13,6 @@ from bson.json_util import dumps
 
 # Mongo db version 3.2.10
 # Mongo authentication: CR https://stackoverflow.com/questions/29006887/mongodb-cr-authentication-failed
-"""
-Input
-dir_path: Directory path of properties file - string
-file_path : File path of the properties file - string
-logger: Log handler - Logger
-"""
-def read_properties(dir_path, file_path, logger):
-    os.chdir(dir_path)        
-    f = open(file_path, "r")      
-    if(f is None):
-        writeLogs(logger, "read_properties", "file_path")
-        raise Exception("File not found")
-    file = f.read().split("\n")
-    db_url = file[0].split("=")[1]
-    db_name = file[4].split("=")[1]
-    client_id = file[6].split("=")[1]
-    tenant_id = file[7].split("=")[1]
-    scopes = file[8].split("=")[1].split(",")
-    
-    configs = {
-      "db_url": db_url,
-      "db_name": db_name,
-      "client_id": client_id,
-      "tenant_id": tenant_id,
-      "scopes": scopes
-    }
-    return configs
     
 #TO DO 
 #Create class Tweet with all the attributes in the Message Repository:
@@ -185,19 +158,6 @@ WARNING The attribute in the Message Repository that refers to the tweet creatio
 (The attribute created_date instead refers to the date when a tweet is stored in mongodb)
 """
 def count_tweets(db, start, end, time_range, only_geo, logger):
-    """
-    i0 = calendar.timegm(datetime.utcnow().utctimetuple())
-    i1 = calendar.timegm(datetime.utcnow().utctimetuple())
-    count = 4
-    d0 = (i0,i1,count)
-    i0 = calendar.timegm(datetime.utcnow().utctimetuple())
-    i1 = calendar.timegm(datetime.utcnow().utctimetuple())
-    count = 100
-    d1 = (i0,i1,count)
-    result = [d0,d1]
-    return result
-
-    """
     if(logger is None):
         raise Exception("No logger available")
     if(db is None):
@@ -246,7 +206,15 @@ def count_tweets(db, start, end, time_range, only_geo, logger):
     for i in range(0, len(tweets)):
         ranges[int((time2int(tweets[i]['date'])-start)/time_range)] += 1
         sum += 1
-    return (ranges, sum)
+    tweetList = []
+    first = start
+    second = start + time_range
+    for i in range(0, n_ranges):
+        obj = (first, second, int(ranges[i]))
+        tweetList.append(obj)
+        first = second
+        second += time_range
+    return tweetList
 
 """
 Input
@@ -356,19 +324,7 @@ sentiment : Float - Mean value of geolocated tweets sentiment in the interval (i
 WARNING The attribute in the Message repository that refers to the tweet creation is date that is not a timestamp 
 (The attribute created_date instead refers to the date when a tweet is stored in mongodb)
 """
-def senti_tweets(db, start, end, time_range, only_geo, logger):
-    """
-    i0 = calendar.timegm(datetime.utcnow().utctimetuple())
-    i1 = calendar.timegm(datetime.utcnow().utctimetuple())
-    sentiment = 0.8
-    d0 = (i0,i1,sentiment)
-    i0 = calendar.timegm(datetime.utcnow().utctimetuple())
-    i1 = calendar.timegm(datetime.utcnow().utctimetuple())
-    sentiment = 0.4
-    d1 = (i0,i1,sentiment)
-    result = [d0,d1]
-    return result
-    """    
+def senti_tweets(db, start, end, time_range, only_geo, logger):    
     if(logger is None):
         raise Exception("No logger available")
     if(db is None):
@@ -410,23 +366,23 @@ def senti_tweets(db, start, end, time_range, only_geo, logger):
             "$lt": int2time(end)
         }}))
         
-    n_ranges = math.ceil((end-start)/time_range)    
-    ranges = np.zeros(n_ranges * 4)
-    lower = start;
-    upper = start + time_range
-    for i in range (0, n_ranges):
-        ranges[i * 4] = lower
-        ranges[i * 4 + 1] = upper 
-        lower = upper 
-        upper += time_range
+    n_ranges = math.ceil((end-start)/time_range) 
+    counts = np.zeros(n_ranges)
+    sentiments = np.zeros(n_ranges)
     for i in range(0, len(tweets)):
-        ranges[int((time2int(tweets[i]['date'])-start)/time_range) * 4 + 2] += 1
-        ranges[int((time2int(tweets[i]['date'])-start)/time_range) * 4 + 3] += tweets[i]['sentiment']
-            
+        counts[int((time2int(tweets[i]['date'])-start)/time_range)] += 1
+        sentiments[int((time2int(tweets[i]['date'])-start)/time_range)] += tweets[i]['sentiment']
+    tweetList = []    
+    first = start
+    second = start + time_range   
     for i in range (0, n_ranges):  
-        if(ranges[i * 4 + 2] > 0):
-            ranges[i * 4 + 3] /= ranges[i * 4 + 2]
-    return ranges
+        if(counts[i] > 0):
+            sentiments[i] /= counts[i]
+        obj = (first, second, sentiments[i])
+        tweetList.append(obj)
+        first = second
+        second += time_range
+    return tweetList
 
 """
 Input
@@ -937,13 +893,12 @@ def backup(configs, db, time, logger):
             f.write(BSON.encode(doc))
     '''    
     tweets = db.Message.find({"createdDate" : {"$gt": time*1000}})  #createdDate is in milliseconds
-    
     collection = tweets
     jsonpath = "Message_" + str(year) + "-" + str(month) + "-" + str(day) + ".json"
     jsonpath = join("backups/", jsonpath)
     with open(jsonpath, 'wb') as jsonfile:
         jsonfile.write(dumps(collection).encode())
-    
+
     onedrive_destination = '{}/{}/me/drive/root:/emc-backups'.format(RESOURCE_URL,API_VERSION)
     upload("backups/", onedrive_destination, get_headers(CLIENT_ID, AUTHORITY_URL, SCOPES))
     if (check_hash("backups/", onedrive_destination, get_headers(CLIENT_ID, AUTHORITY_URL, SCOPES)) == False):
@@ -1036,6 +991,34 @@ def get_log(log_path, date, log_type, component, logger):
         if(dateString==line[:19] and log_type in line and component in line):
             lines.append(line)
     return lines
+
+"""
+Input
+dir_path: Directory path of properties file - string
+file_path : File path of the properties file - string
+logger: Log handler - Logger
+"""
+def read_properties(dir_path, file_path, logger):
+    os.chdir(dir_path)        
+    f = open(file_path, "r")      
+    if(f is None):
+        writeLogs(logger, "read_properties", "file_path")
+        raise Exception("File not found")
+    file = f.read().split("\n")
+    db_url = file[0].split("=")[1]
+    db_name = file[4].split("=")[1]
+    client_id = file[6].split("=")[1]
+    tenant_id = file[7].split("=")[1]
+    scopes = file[8].split("=")[1].split(",")
+    
+    configs = {
+      "db_url": db_url,
+      "db_name": db_name,
+      "client_id": client_id,
+      "tenant_id": tenant_id,
+      "scopes": scopes
+    }
+    return configs
   
 logger = logging.getLogger('emotionalcity')
 try:
@@ -1049,25 +1032,22 @@ db = client[configs["db_name"]]
 '''
 print("TEST count_tweets :")
 try:
-    (ranges, sum) = count_tweets(db, 1607464906, 1607475302, 3600, True, logger)
+    ranges = count_tweets(db, 1607464906, 1607475302, 3600, True, logger)
     print(ranges)
-    print("Total tweets : " + str(sum))
 except:
     print("Wrong parameters in count_tweets")
-    
+  
 print("\nTEST count_tweets :")
 try:
-    (ranges, sum) = count_tweets(db, 1607464906, 0, 3600, True, logger)
+    ranges = count_tweets(db, 1607464906, 0, 3600, True, logger)
     print(ranges)
-    print("Total tweets : " + str(sum))
 except:
     print("Wrong parameters in count_tweets")
 
 print("\nTEST count_tweets_time :")
 try:
-    (ranges, sum) = count_tweets_time(db, int2time(1607464906), int2time(1607475302), 3600, True, logger)
-    print(ranges)
-    print("Total tweets : " + str(sum))    
+    ranges = count_tweets_time(db, int2time(1607464906), int2time(1607475302), 3600, True, logger)
+    print(ranges)   
 except:
    print("Wrong parameters in count_tweets_time")
 
